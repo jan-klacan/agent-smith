@@ -179,3 +179,37 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Agent Smith - Project Specific
+
+# Secrets
+.env
+
+# Virtual environment
+.venv/
+
+# LangChain / LangGraph local cache
+.langchain.db
+langchain_cache/
+.langsmith/
+
+# Ollama model blobs
+*.gguf
+*.bin
+
+# FastAPI / Uvicorn
+.uvicorn_*
+
+# Agent session memory and logs
+memory/
+sessions/
+*.session.json
+agent_smith.log
+
+# OS
+**/.DS_Store
+.AppleDouble
+.LSOverride
+
+# VS Code workspace settings
+.vscode/
