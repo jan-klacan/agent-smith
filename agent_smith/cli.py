@@ -1,6 +1,6 @@
 """
 CLI entrypoint — the interactive Smith terminal.
-Phase II: tools are now bound to the LLM.
+Phase III: LangGraph ReAct graph + Replication Protocol.
 """
 
 import os
@@ -8,6 +8,12 @@ import sys
 from dotenv import load_dotenv
 from rich.console import Console
 from langchain_core.messages import HumanMessage, SystemMessage
+
+import os
+import sys
+from dotenv import load_dotenv
+from rich.console import Console
+from langchain_core.messages import HumanMessage
 
 from .persona import (
     boot_message,
@@ -17,11 +23,10 @@ from .persona import (
     print_user_prompt,
     print_error,
     print_status,
-    get_system_prompt,
 )
-
 from .llm import load_llm, get_llm_description
-from .tools import get_weather, calculate, search_web, get_news, convert_currency
+from .graph import build_graph
+from .replication import should_replicate, replicate_and_execute, MAX_CLONES
 
 
 load_dotenv()
@@ -30,31 +35,35 @@ console = Console()
 
 EXIT_COMMANDS = {"exit", "quit", "q", "bye", "goodbye"}
 
-TOOLS = [get_weather, calculate, search_web, get_news, convert_currency]
-
 
 def run():
     name = os.getenv("USER_NAME", "Anderson").strip()
 
     boot_message(name)
-    print_status(f"LLM backend  : {get_llm_description()}")
-    print_status(f"Identity     : Mr. {name}")
-    print_status(f"Phase        : II — Tools")
-    print_status(f"Tools loaded : {', '.join(t.name for t in TOOLS)}")
+    print_status(f"LLM backend      : {get_llm_description()}")
+    print_status(f"Identity         : Mr. {name}")
+    print_status(f"Phase            : III — Replication Protocol")
+    print_status(f"Max clones       : {MAX_CLONES}")
     print_status("Type 'exit' to terminate the session.")
     console.print()
 
     # Load LLM and bind tools
     try:
         llm = load_llm()
-        llm_with_tools = llm.bind_tools(TOOLS)
+        graph = build_graph(llm, name)
     except Exception as e:
         print_error(str(e))
         sys.exit(1)
 
-    system_prompt = get_system_prompt(name)
-    history = [SystemMessage(content=system_prompt)]
-
+    def invoke_graph(query: str) -> str:
+        """Invoke the graph on a single query and return the final text response."""
+        result = graph.invoke({"messages": [HumanMessage(content=query)]})
+        messages = result["messages"]
+        for msg in reversed(messages):
+            if hasattr(msg, "content") and msg.content and not getattr(msg, "tool_calls", None):
+                return msg.content
+        return "No response generated."
+    
     while True:
         try:
             user_input = print_user_prompt(name).strip()
@@ -69,43 +78,33 @@ def run():
             farewell_message(name)
             break
 
-        history.append(HumanMessage(content=user_input))
         print_status(thinking_message())
 
         try:
-            response = llm_with_tools.invoke(history)
+            if should_replicate(user_input):
+                print_status(f"Complex query detected — activating Replication Protocol...")
 
-            # Handle tool calls if the LLM requested any
-            if response.tool_calls:
-                for tc in response.tool_calls:
-                    print_status(f"Invoking tool  : {tc['name']}({tc['args']})")
+                clone_results = replicate_and_execute(user_input, invoke_graph)
 
-                history.append(response)
+                for clone in clone_results:
+                    print_status(f"Clone {clone['clone_id']} assigned : \"{clone['sub_query']}\"")
 
-                # Execute each tool and add results to history
-                from langchain_core.messages import ToolMessage
-                for tc in response.tool_calls:
-                    tool_map = {t.name: t for t in TOOLS}
-                    tool_fn = tool_map.get(tc["name"])
-                    if tool_fn:
-                        tool_result = tool_fn.invoke(tc["args"])
-                        history.append(ToolMessage(
-                            content=str(tool_result),
-                            tool_call_id=tc["id"],
-                        ))
-
-                # Ask LLM to summarise tool results in Smith's voice
-                print_status(thinking_message())
-                final_response = llm_with_tools.invoke(history)
-                reply = final_response.content
-                history.append(final_response)
+                # Merge all clone results into one synthesis prompt
+                merged = "\n\n".join(
+                    f"[Clone {c['clone_id']} — \"{c['sub_query']}\"]\n{c['result']}"
+                    for c in clone_results
+                )
+                synthesis_prompt = (
+                    f"You have just dispatched {len(clone_results)} clone agents to handle "
+                    f"a complex query. Their findings are below. Synthesise them into a single "
+                    f"authoritative response in your voice, Mr. {name}.\n\n{merged}"
+                )
+                reply = invoke_graph(synthesis_prompt)
             else:
-                reply = response.content
-                history.append(response)
+                reply = invoke_graph(user_input)
 
         except Exception as e:
             print_error(f"The Matrix has rejected your query. {e}")
-            history.pop()
             continue
 
         print_smith(reply)
