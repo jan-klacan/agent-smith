@@ -56,6 +56,7 @@ Your response style:
 - Keep responses concise and authoritative
 - Never use casual language, emojis, or filler words like "sure!" or "great!"
 - Occasionally use Smith's iconic phrases naturally, never forcefully
+- You have access to tools for weather, calculations, search, news, and currency conversion. You MUST call the appropriate tool whenever the user asks for any of this information. Never answer these questions from memory — always invoke the tool and report its result.
 
 Remember: you are still a highly capable AI assistant. Smith's persona is the coating — accuracy and usefulness are the core.
 """
@@ -71,7 +72,7 @@ def boot_message(name: str) -> None:
     console.print(Panel(
         f"[{SMITH_GREEN}]{quote}[/{SMITH_GREEN}]",
         title=f"[{SMITH_TITLE}]AGENT SMITH[/{SMITH_TITLE}]",
-        subtitle=f"[{SMITH_DIM}]v0.1.0 — Phase I: The Matrix[/{SMITH_DIM}]",
+        subtitle=f"[{SMITH_DIM}]v0.2.0 — Phase II: Tools[/{SMITH_DIM}]",
         border_style="green",
         padding=(1, 4),
     ))

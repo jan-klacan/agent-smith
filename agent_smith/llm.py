@@ -19,7 +19,7 @@ def load_llm() -> BaseChatModel:
         return _load_ollama(ollama_model)
     if gemini_key:
         return _load_gemini(gemini_key)
-    return _load_ollama("llama3.2")
+    return _load_ollama("qwen2.5")
 
 
 def _load_ollama(model: str) -> BaseChatModel:
@@ -54,4 +54,4 @@ def get_llm_description() -> str:
         return f"Ollama ({ollama_model}) — local, zero cost"
     if gemini_key:
         return "Gemini 2.0 Flash Lite — free tier"
-    return "Ollama (llama3.2) — local, zero cost [default]"
+    return "Ollama (qwen2.5) — local, zero cost [default]"
