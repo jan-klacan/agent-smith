@@ -3,6 +3,7 @@ LangChain tool definitions.
 Each tool calls the local mock server at localhost:8000.
 """
 
+from .anomaly import detect_anomaly
 import httpx
 from langchain_core.tools import tool
 
@@ -49,3 +50,6 @@ def convert_currency(amount: float, from_currency: str, to_currency: str) -> dic
         "from_currency": from_currency,
         "to_currency": to_currency,
     })
+
+
+TOOLS = [get_weather, calculate, search_web, get_news, convert_currency, detect_anomaly]

@@ -12,11 +12,8 @@ from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 
-from .tools import get_weather, calculate, search_web, get_news, convert_currency
+from .tools import TOOLS
 from .persona import get_system_prompt
-
-
-TOOLS = [get_weather, calculate, search_web, get_news, convert_currency]
 
 
 class AgentState(TypedDict):

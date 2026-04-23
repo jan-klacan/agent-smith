@@ -72,7 +72,7 @@ def boot_message(name: str) -> None:
     console.print(Panel(
         f"[{SMITH_GREEN}]{quote}[/{SMITH_GREEN}]",
         title=f"[{SMITH_TITLE}]AGENT SMITH[/{SMITH_TITLE}]",
-        subtitle=f"[{SMITH_DIM}]v0.3.0 — Phase III: Replication Protocol[/{SMITH_DIM}]",
+        subtitle=f"[{SMITH_DIM}]v0.4.0 — Phase IV: Persistence Protocol[/{SMITH_DIM}]",
         border_style="green",
         padding=(1, 4),
     ))
