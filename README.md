@@ -17,12 +17,6 @@ Agent Smith is a LangGraph-based ReAct agent with:
 - A purpose meter for mission progress tracking
 - A local mock backend so demos run with zero paid APIs
 
-## Agent Smith ASCII Portrait
-
-- Full portrait location: [ascii.md](ascii.md)
-- CLI behavior: shown at startup only when terminal width can display it without wrapping
-- For clean proportions in markdown, view it inside a fenced code block in [ascii.md](ascii.md)
-
 ## Why This Project Exists
 
 The intent of this project is to show:
@@ -111,6 +105,10 @@ The intent of this project is to show:
 	- Shows progress toward configured threshold
 8. Configurable behavior through .env settings
 9. Zero-cost mock tool backend for reproducible demos
+
+## Agent Smith ASCII Portrait
+
+- CLI behavior: shown at startup only when terminal width can display it without wrapping
 
 ## Prerequisites
 
