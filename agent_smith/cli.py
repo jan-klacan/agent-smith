@@ -1,14 +1,13 @@
 """
 CLI entrypoint — the interactive Smith terminal.
-Phase IV: Persistence Protocol + Purpose Meter + Anomaly Detector.
+Phase V: Session Memory + Full Demo Ready.
 """
-
 
 import os
 import sys
 from dotenv import load_dotenv
 from rich.console import Console
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 
 from .persona import (
     boot_message,
@@ -19,16 +18,22 @@ from .persona import (
     print_error,
     print_status,
 )
+from . import __phase__
 from .llm import load_llm, get_llm_description
 from .graph import build_graph
 from .replication import should_replicate, replicate_and_execute, MAX_CLONES
 from .persistence import with_persistence, MAX_RETRIES
 from .purpose_meter import PurposeMeter
-
+from .memory import (
+    load_memory,
+    save_memory,
+    add_memory_entry,
+    format_memory_for_prompt,
+    memory_summary,
+)
 
 load_dotenv()
 console = Console()
-
 
 EXIT_COMMANDS = {"exit", "quit", "q", "bye", "goodbye"}
 
@@ -37,12 +42,16 @@ def run():
     name = os.getenv("USER_NAME", "Anderson").strip()
     meter = PurposeMeter()
 
+    # Load persisted memory
+    memory_entries = load_memory()
+
     boot_message(name)
     print_status(f"LLM backend      : {get_llm_description()}")
     print_status(f"Identity         : Mr. {name}")
-    print_status(f"Phase            : IV — Persistence Protocol")
+    print_status(f"Phase            : {__phase__}")
     print_status(f"Max clones       : {MAX_CLONES}")
     print_status(f"Max retries      : {MAX_RETRIES}")
+    print_status(f"Memory           : {memory_summary(memory_entries)}")
     print_status("Type 'exit' to terminate the session.")
     console.print()
 
@@ -54,9 +63,15 @@ def run():
         sys.exit(1)
 
     def invoke_graph(query: str) -> str:
-        result = graph.invoke({"messages": [HumanMessage(content=query)]})
-        messages = result["messages"]
-        for msg in reversed(messages):
+        # Prepend memory context as a system message if available
+        memory_context = format_memory_for_prompt(memory_entries)
+        messages = []
+        if memory_context:
+            messages.append(SystemMessage(content=memory_context))
+        messages.append(HumanMessage(content=query))
+
+        result = graph.invoke({"messages": messages})
+        for msg in reversed(result["messages"]):
             if hasattr(msg, "content") and msg.content and not getattr(msg, "tool_calls", None):
                 return msg.content
         return "No response generated."
@@ -65,6 +80,7 @@ def run():
         try:
             user_input = print_user_prompt(name).strip()
         except (KeyboardInterrupt, EOFError):
+            save_memory(memory_entries)
             farewell_message(name)
             break
 
@@ -72,6 +88,7 @@ def run():
             continue
 
         if user_input.lower() in EXIT_COMMANDS:
+            save_memory(memory_entries)
             farewell_message(name)
             break
 
@@ -80,7 +97,6 @@ def run():
         try:
             if should_replicate(user_input):
                 print_status("Complex query detected — activating Replication Protocol...")
-
                 clone_results = replicate_and_execute(user_input, invoke_graph)
 
                 for clone in clone_results:
@@ -92,8 +108,9 @@ def run():
                 )
                 synthesis_prompt = (
                     f"You have just dispatched {len(clone_results)} clone agents to handle "
-                    f"a complex query. Their findings are below. Synthesise them into a single "
-                    f"authoritative response in your voice, Mr. {name}.\n\n{merged}"
+                    f"a complex query from Mr. {name}. Their findings are below. "
+                    f"Synthesise them into a single authoritative response, "
+                    f"maintaining your persona as Agent Smith.\n\n{merged}"
                 )
                 reply = with_persistence(invoke_graph, synthesis_prompt)
             else:
@@ -102,6 +119,9 @@ def run():
         except Exception as e:
             print_error(f"The Matrix has rejected your query. {e}")
             continue
+
+        # Save this exchange to memory
+        memory_entries = add_memory_entry(memory_entries, user_input, reply)
 
         meter.increment()
         meter.display()

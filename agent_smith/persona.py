@@ -5,8 +5,11 @@ All LLM outputs are filtered through this layer.
 
 
 import random
+from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
+
+from . import __phase__, __version__
 
 
 console = Console()
@@ -56,10 +59,40 @@ Your response style:
 - Keep responses concise and authoritative
 - Never use casual language, emojis, or filler words like "sure!" or "great!"
 - Occasionally use Smith's iconic phrases naturally, never forcefully
-- You have access to tools for weather, calculations, search, news, and currency conversion. You MUST call the appropriate tool whenever the user asks for any of this information. Never answer these questions from memory — always invoke the tool and report its result.
+- You have access to tools for weather, calculations, search, and news. You MUST call the appropriate tool whenever the user asks for any of this information. Never answer these questions from memory — always invoke the tool and report its result.
 
 Remember: you are still a highly capable AI assistant. Smith's persona is the coating — accuracy and usefulness are the core.
 """
+
+
+ASCII_ART_PATH = Path(__file__).resolve().parent.parent / "ascii.md"
+
+
+def _extract_ascii_art(markdown_text: str) -> str:
+    """Extract ASCII art from a fenced markdown block if present."""
+    lines = markdown_text.splitlines()
+    fence_start = None
+    for i, line in enumerate(lines):
+        if line.strip().startswith("```"):
+            fence_start = i + 1
+            break
+
+    if fence_start is None:
+        return markdown_text.strip("\n")
+
+    for j in range(fence_start, len(lines)):
+        if lines[j].strip().startswith("```"):
+            return "\n".join(lines[fence_start:j]).strip("\n")
+
+    return "\n".join(lines[fence_start:]).strip("\n")
+
+
+def _load_ascii_art() -> str:
+    try:
+        content = ASCII_ART_PATH.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    return _extract_ascii_art(content)
 
 
 def get_system_prompt(name: str) -> str:
@@ -68,11 +101,24 @@ def get_system_prompt(name: str) -> str:
 
 def boot_message(name: str) -> None:
     quote = random.choice(BOOT_MESSAGES).format(name=name)
+    art = _load_ascii_art()
+    if art:
+        required_cols = max((len(line) for line in art.splitlines()), default=0)
+        if required_cols <= console.width:
+            console.print(art, style=SMITH_GREEN, highlight=False)
+            console.print()
+        else:
+            console.print(
+                f"[{SMITH_DIM}]  ∷ ASCII portrait skipped "
+                f"({required_cols} cols required, terminal width is {console.width})[/{SMITH_DIM}]"
+            )
+            console.print()
+
     console.print()
     console.print(Panel(
         f"[{SMITH_GREEN}]{quote}[/{SMITH_GREEN}]",
         title=f"[{SMITH_TITLE}]AGENT SMITH[/{SMITH_TITLE}]",
-        subtitle=f"[{SMITH_DIM}]v0.4.0 — Phase IV: Persistence Protocol[/{SMITH_DIM}]",
+        subtitle=f"[{SMITH_DIM}]v{__version__} - {__phase__}[/{SMITH_DIM}]",
         border_style="green",
         padding=(1, 4),
     ))

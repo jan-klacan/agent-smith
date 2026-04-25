@@ -201,8 +201,8 @@ langchain_cache/
 .uvicorn_*
 
 # Agent session memory and logs
-memory/
-sessions/
+/memory/
+/sessions/
 *.session.json
 agent_smith.log
 

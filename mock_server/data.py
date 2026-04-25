@@ -4,12 +4,14 @@ All data is fictional — no external API calls are made.
 """
 
 WEATHER_DATA = {
+    "amsterdam": {"city": "Amsterdam", "temperature": 13, "unit": "C", "condition": "Windy", "humidity": 78},
     "london": {"city": "London", "temperature": 11, "unit": "C", "condition": "Rainy", "humidity": 85},
     "new york": {"city": "New York", "temperature": 18, "unit": "C", "condition": "Partly Cloudy", "humidity": 62},
     "tokyo": {"city": "Tokyo", "temperature": 22, "unit": "C", "condition": "Clear", "humidity": 55},
     "paris": {"city": "Paris", "temperature": 16, "unit": "C", "condition": "Sunny", "humidity": 60},
     "sydney": {"city": "Sydney", "temperature": 25, "unit": "C", "condition": "Clear", "humidity": 50},
     "berlin": {"city": "Berlin", "temperature": 12, "unit": "C", "condition": "Cloudy", "humidity": 72},
+    "dubai": {"city": "Dubai", "temperature": 33, "unit": "C", "condition": "Hot", "humidity": 28},
 }
 
 NEWS_DATA = {
@@ -56,17 +58,4 @@ SEARCH_DATA = {
         {"title": "Related topics found", "snippet": "Try searching for: python, ai, or matrix for richer mock results."},
         {"title": "Mock search engine v1.0", "snippet": "This is a simulated search backend. All results are fictional and for demonstration purposes only."},
     ],
-}
-
-CURRENCY_RATES = {
-    "USD": 1.0,
-    "EUR": 0.92,
-    "GBP": 0.79,
-    "JPY": 154.50,
-    "AUD": 1.53,
-    "CAD": 1.37,
-    "CHF": 0.90,
-    "CNY": 7.24,
-    "SEK": 10.42,
-    "NOK": 10.55,
 }

@@ -1,5 +1,5 @@
 """
-LLM loader — Ollama primary, Gemini free-tier fallback.
+LLM loader — Ollama first, Gemini when OLLAMA_MODEL is not set.
 """
 
 
@@ -12,6 +12,7 @@ load_dotenv()
 
 
 def load_llm() -> BaseChatModel:
+    """Select backend by config priority: OLLAMA_MODEL, then GEMINI_API_KEY."""
     ollama_model = os.getenv("OLLAMA_MODEL", "").strip()
     gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
 
@@ -53,5 +54,5 @@ def get_llm_description() -> str:
     if ollama_model:
         return f"Ollama ({ollama_model}) — local, zero cost"
     if gemini_key:
-        return "Gemini 2.0 Flash Lite — free tier"
+        return "Gemini 2.0 Flash Lite — selected when OLLAMA_MODEL is empty"
     return "Ollama (qwen2.5) — local, zero cost [default]"

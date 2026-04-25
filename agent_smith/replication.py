@@ -1,11 +1,11 @@
 """
 Replication Protocol — clone detection and parallel execution.
 Smith spawns clone agents for complex multi-part queries.
-Maximum clones is capped by MAX_CLONES (default: 3).
+Maximum clones is capped by MAX_CLONES (default: 3, minimum: 1).
 """
 
 import os
-import asyncio
+import re
 from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 
@@ -13,19 +13,22 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-MAX_CLONES = int(os.getenv("MAX_CLONES", 3))
+def _normalise_max_clones(value) -> int:
+    """Return a safe clone count with a minimum of 1."""
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return 1
+    return max(1, parsed)
 
 
-# Keywords that suggest a multi-part query requiring clones
-MULTI_PART_INDICATORS = [
-    " and ",
-    " also ",
-    " as well as ",
-    " plus ",
-    " additionally ",
-    " both ",
-    ", and ",
-]
+MAX_CLONES = _normalise_max_clones(os.getenv("MAX_CLONES", 3))
+
+
+SPLIT_PATTERN = re.compile(
+    r"\s*(?:,\s*and\b|\band\b|\balso\b|\bas\s+well\s+as\b|\bplus\b|\badditionally\b|\bboth\b)\s*",
+    re.IGNORECASE,
+)
 
 # Tool keywords used to count how many distinct tool needs exist
 TOOL_KEYWORDS = {
@@ -33,7 +36,6 @@ TOOL_KEYWORDS = {
     "calculate": ["calculate", "compute", "multiply", "divide", "add", "subtract", "plus", "minus", "squared"],
     "search_web": ["search", "find", "look up", "information about", "tell me about"],
     "get_news": ["news", "headlines", "latest", "recent", "current events"],
-    "convert_currency": ["convert", "exchange", "usd", "eur", "gbp", "jpy", "dollars", "euros", "pounds"],
 }
 
 
@@ -65,31 +67,17 @@ def decompose_query(query: str) -> list[str]:
     Each sub-query targets a single tool need.
     Capped at MAX_CLONES.
     """
-    query_lower = query.lower()
-    sub_queries = []
+    max_clones = _normalise_max_clones(MAX_CLONES)
 
-    # Split on common conjunctions
-    parts = [query]
-    for indicator in MULTI_PART_INDICATORS:
-        new_parts = []
-        for part in parts:
-            split = part.split(indicator, 1)
-            new_parts.extend(split)
-        parts = new_parts
-
-    # Filter empty parts and strip whitespace
-    parts = [p.strip() for p in parts if p.strip()]
-
-    # Map each part to the most relevant sub-query
-    for part in parts:
-        if part:
-            sub_queries.append(part)
+    # Split case-insensitively across common conjunctions.
+    parts = [p.strip() for p in SPLIT_PATTERN.split(query) if p.strip()]
+    sub_queries = parts if parts else [query]
 
     # Cap at MAX_CLONES
-    if len(sub_queries) > MAX_CLONES:
-        sub_queries = sub_queries[:MAX_CLONES]
+    if len(sub_queries) > max_clones:
+        sub_queries = sub_queries[:max_clones]
 
-    return sub_queries if sub_queries else [query]
+    return sub_queries
 
 
 def run_clone(clone_id: int, sub_query: str, graph_fn) -> dict:
@@ -115,8 +103,9 @@ def replicate_and_execute(query: str, graph_fn) -> list[dict]:
     Spawn clone agents in parallel and collect their results.
     Each clone runs graph_fn on its assigned sub-query.
     """
+    max_clones = _normalise_max_clones(MAX_CLONES)
     sub_queries = decompose_query(query)
-    clone_count = min(len(sub_queries), MAX_CLONES)
+    clone_count = min(len(sub_queries), max_clones)
     sub_queries = sub_queries[:clone_count]
 
     results = []

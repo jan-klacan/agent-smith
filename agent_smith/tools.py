@@ -42,14 +42,5 @@ def get_news(topic: str = "default") -> dict:
     """Get recent news headlines for a topic. Available topics: technology, science, world."""
     return _get("/news", params={"topic": topic})
 
-@tool
-def convert_currency(amount: float, from_currency: str, to_currency: str) -> dict:
-    """Convert an amount between currencies. Supported: USD, EUR, GBP, JPY, AUD, CAD, CHF, CNY, SEK, NOK."""
-    return _get("/currency", params={
-        "amount": amount,
-        "from_currency": from_currency,
-        "to_currency": to_currency,
-    })
 
-
-TOOLS = [get_weather, calculate, search_web, get_news, convert_currency, detect_anomaly]
+TOOLS = [get_weather, calculate, search_web, get_news, detect_anomaly]

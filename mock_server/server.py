@@ -1,6 +1,5 @@
 """
 Mock API server — FastAPI application.
-Provides 5 tool endpoints. Zero external API calls.
 Run with: uvicorn mock_server.server:app --port 8000
 """
 
@@ -9,7 +8,7 @@ import operator
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 
-from .data import WEATHER_DATA, NEWS_DATA, SEARCH_DATA, CURRENCY_RATES
+from .data import WEATHER_DATA, NEWS_DATA, SEARCH_DATA
 
 app = FastAPI(
     title="Agent Smith — Mock Tool Server",
@@ -88,28 +87,6 @@ def get_news(topic: str = "default"):
     key = topic.lower().strip()
     headlines = NEWS_DATA.get(key, NEWS_DATA["default"])
     return JSONResponse(content={"topic": topic, "headlines": headlines})
-
-
-@app.get("/currency")
-def convert_currency(amount: float, from_currency: str, to_currency: str):
-    src = from_currency.upper().strip()
-    dst = to_currency.upper().strip()
-
-    if src not in CURRENCY_RATES:
-        raise HTTPException(status_code=400, detail=f"Unknown currency: {src}")
-    if dst not in CURRENCY_RATES:
-        raise HTTPException(status_code=400, detail=f"Unknown currency: {dst}")
-
-    in_usd = amount / CURRENCY_RATES[src]
-    converted = in_usd * CURRENCY_RATES[dst]
-
-    return JSONResponse(content={
-        "amount": amount,
-        "from": src,
-        "to": dst,
-        "result": round(converted, 2),
-        "rate": round(CURRENCY_RATES[dst] / CURRENCY_RATES[src], 6),
-    })
 
 
 @app.get("/health")

@@ -30,11 +30,15 @@ def build_graph(llm, name: str):
     system_prompt = get_system_prompt(name)
 
     def agent_node(state: AgentState) -> AgentState:
-        messages = state["messages"]
-        # Always ensure system prompt is first
-        has_system = any(isinstance(m, SystemMessage) for m in messages)
-        if not has_system:
-            messages = [SystemMessage(content=system_prompt)] + list(messages)
+        messages = list(state["messages"])
+        # Always keep Smith's canonical system prompt in position 0.
+        has_smith_prompt_first = (
+            bool(messages)
+            and isinstance(messages[0], SystemMessage)
+            and messages[0].content == system_prompt
+        )
+        if not has_smith_prompt_first:
+            messages = [SystemMessage(content=system_prompt)] + messages
         response = llm_with_tools.invoke(messages)
         return {"messages": [response]}
 
